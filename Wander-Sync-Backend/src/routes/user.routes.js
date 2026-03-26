@@ -17,7 +17,6 @@ const router = Router();
 router.get("/me", isLoggedIn, getProfile);
 
 router.patch("/updateIdentity", isLoggedIn, updateProfile);
-router.patch("/updateProfessional", isLoggedIn, updateProfile);
 router.patch("/updateContact", isLoggedIn, updateProfile);
 router.post(
   "/deleteAccount",

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
-import { FormInput, FormSelect, FormTextarea, SkillInput } from "../components/FormComponents"
+import { FormInput, FormSelect, FormTextarea } from "../components/FormComponents"
 import * as z from 'zod';
 import {
-  Mail, User, Briefcase, Globe,
+  Mail, User , Globe,
   Save, Camera
 } from 'lucide-react';
 import apiClient from '../../services/apiClient';
@@ -13,13 +13,6 @@ import apiClient from '../../services/apiClient';
 
 // --- ZOD SCHEMAS ---
 
-const professionalSchema = z.object({
-  jobTitle: z.string().min(2, "Job title is too short"),
-  department: z.string().min(2, "Department is required"),
-  skills: z.array(z.string()).min(1, "Add at least one skill"),
-  githubUrl: z.string().url().optional().or(z.literal("")),
-  linkedinUrl: z.string().url().optional().or(z.literal(""))
-});
 
 const identitySchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -130,76 +123,7 @@ const IdentitySection = ({ user, onUpdate }) => {
   );
 };
 
-const ProfessionalSection = ({ user, onUpdate }) => {
-  const { register, handleSubmit, control, formState: { errors, isDirty, isSubmitting }, reset } = useForm({
-    resolver: zodResolver(professionalSchema),
-    mode: "onChange",
-    defaultValues: {
-      jobTitle: user?.professional?.jobTitle || user?.jobTitle || "",
-      department: user?.professional?.department || user?.department || "",
-      skills: user?.professional?.skills || user?.skills || [],
-      githubUrl: user?.professional?.githubUrl || user?.githubUrl || "",
-      linkedinUrl: user?.professional?.linkedinUrl || user?.linkedinUrl || ""
-    }
-  });
 
-  const onSubmit = async (data) => {
-      await apiClient.updateProfessional(data);
-      await onUpdate();
-      reset(data);
-  };
-
-  return (
-    <EditableSection
-      title="Professional Information"
-      icon={Briefcase}
-      isDirty={isDirty}
-      isSubmitting={isSubmitting}
-      onSubmit={handleSubmit(onSubmit)}
-      onCancel={() => reset()}
-    >
-      <div className="space-y-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <FormInput
-            label="Job Title"
-            placeholder="e.g., Senior Developer"
-            error={errors.jobTitle?.message}
-            {...register("jobTitle")}
-          />
-          <FormInput
-            label="Department"
-            placeholder="e.g., Engineering"
-            error={errors.department?.message}
-            {...register("department")}
-          />
-        </div>
-
-        <Controller
-          control={control}
-          name="skills"
-          render={({ field: { value, onChange } }) => (
-            <SkillInput value={value} onChange={onChange} error={errors.skills?.message} />
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-gray-700">
-          <FormInput
-            label="GitHub URL"
-            placeholder="https://github.com/username"
-            error={errors.githubUrl?.message}
-            {...register("githubUrl")}
-          />
-          <FormInput
-            label="LinkedIn URL"
-            placeholder="https://linkedin.com/in/username"
-            error={errors.linkedinUrl?.message}
-            {...register("linkedinUrl")}
-          />
-        </div>
-      </div>
-    </EditableSection>
-  );
-};
 
 const PreferencesSection = ({ user, onUpdate }) => {
   const { register, handleSubmit, formState: { errors, isDirty, isSubmitting }, reset } = useForm({
@@ -324,23 +248,7 @@ export default function ProfileSettings() {
 
           {/* Info Cards - Right */}
           <div className="md:col-span-2 space-y-4">
-            {/* Professional Card */}
-            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
-              <h3 className="text-sm font-semibold text-gray-400 uppercase mb-4 flex items-center gap-2">
-                <Briefcase className="w-4 h-4 text-indigo-500" />
-                Professional
-              </h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-gray-500">Job Title</p>
-                  <p className="text-white font-medium">{user?.professional?.jobTitle || "Not set"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Department</p>
-                  <p className="text-white font-medium">{user?.professional?.department || "Not set"}</p>
-                </div>
-              </div>
-            </div>
+         
 
             {/* Contact Card */}
             <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
@@ -365,7 +273,6 @@ export default function ProfileSettings() {
         {/* Edit Sections */}
         <div className="space-y-6">
           <IdentitySection user={user} onUpdate={fetchUserData} />
-          <ProfessionalSection user={user} onUpdate={fetchUserData} />
           <PreferencesSection user={user} onUpdate={fetchUserData} />
         </div>
       </div>

@@ -133,14 +133,6 @@ class ApiClient {
     });
   }
 
-  // Update Professional (Job, Skills)
-  async updateProfessional(data) {
-    return this.customFetch("/users/updateProfessional", {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    });
-  }
-
   // Update Preferences (Phone, Timezone)
   async updatePreferences(data) {
     return this.customFetch("/users/updateContact", {
