@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import toast from 'react-hot-toast';
 import { FormInput, FormSelect, FormTextarea, SkillInput } from "../components/FormComponents"
 import * as z from 'zod';
 import {
@@ -82,6 +83,7 @@ const IdentitySection = ({ user, onUpdate }) => {
       const response = await apiClient.updateIdentity(data);
       // If apiClient returns the raw response object, log it:
       console.log("Response Status in Updating Profile:", response); 
+      toast.success(response.message)
       await onUpdate();
     } catch (error) {
       // Check if the error has a response attached (common in Axios)
@@ -267,7 +269,6 @@ const PreferencesSection = ({ user, onUpdate }) => {
 
 // --- MAIN PAGE COMPONENT ---
 export default function ProfileSettings() {
-  // FIX: Initialize with NULL, not [], to fix condition check
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -275,14 +276,14 @@ export default function ProfileSettings() {
     try {
       const response = await apiClient.getMe();
       console.log("Response in Profile Page loading", response)
-      // FIX: Handle API wrappers (e.g. { success: true, data: { ... } })
-      // Use response.user if response structure is { user: ... }, or response.data, or response directly
+      toast.success("Profile loaded successfully");
       const userData = response.user || response.data || response;
 
       console.log("Data fetched:", userData);
       setUser(userData);
     } catch (error) {
       console.error("Failed to load user profile", error);
+      toast.error(error.message || "Failed to load profile");
     } finally {
       setIsLoading(false);
     }

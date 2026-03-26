@@ -30,7 +30,7 @@ export async function getUserById(userId) {
 export async function updateProfile({ userId, payload }) {
   // 1. Combine all allowed fields from all three UI sections
   const allowed = [
-    "name", "avatar", "bio",           // Identity
+    "name", "avatar", "bio", "username",          // Identity
     "jobTitle", "skills",              // Professional
     "phoneNumber", "timezone", "theme" // Preferences
   ];

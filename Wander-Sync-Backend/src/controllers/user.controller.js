@@ -29,7 +29,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
 const getProfile = asyncHandler(async (req, res) => {
   if (!req.user?.id) throw new ApiError(401, "Unauthorized");
   const user = await UserService.getUserById(req.user.id);
-  return res.status(200).json(new ApiResponse(200, "Profile fetched", user));
+  return res.status(200).json(new ApiResponse(200,user, "Profile fetched"));
 });
 
 // (Optional) PATCH /api/v1/user
@@ -40,7 +40,7 @@ const updateProfile = asyncHandler(async (req, res) => {
     userId: req.user.id,
     payload: req.body,
   });
-  return res.status(200).json(new ApiResponse(200, "Profile updated", user));
+  return res.status(200).json(new ApiResponse(200, user, "Profile updated"));
 });
 
 export { deleteAccount, getProfile, updateProfile };
