@@ -232,7 +232,7 @@ export default function ProfileSettings() {
                 <Camera className="w-4 h-4" />
               </button>
             </div>
-            <h2 className="text-xl font-bold text-white mb-1">{user?.identity?.name || "User"}</h2>
+            <h2 className="text-xl font-bold text-white mb-1">{user?.name || "User"}</h2>
             <p className="text-indigo-400 text-sm mb-3">@{user?.username || "username"}</p>
             <p className="text-gray-400 text-sm mb-4 leading-relaxed">{user?.identity?.bio || "No bio set"}</p>
             <div className="w-full pt-4 border-t border-gray-700">
