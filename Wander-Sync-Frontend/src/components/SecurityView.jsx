@@ -23,9 +23,9 @@ export function SecurityView() {
     setIsLoading(true);
     try {
       const data = await apiClient.getSessions();
-      console.log("Fetched sessions data:", data);
-      if (data && data.active) {
-        setSessions(data.active);
+      const sessions= data.data 
+      if (sessions.active) {
+        setSessions(data.data.active);
       } else {
         setSessions([]);
       }

@@ -5,16 +5,14 @@ import asyncHandler from "../utils/asyncHandler.js";
 // GET /api/sessions
 // Fetch currently active sessions (not expired and not revoked)
 export const getSessions = asyncHandler(async (req, res) => {
-  const now = new Date();
-
+  const now = new Date(); 
   // 1. Fetch ALL Active Sessions
   // Logic: expiresAt is in the future AND revokedAt does not exist (null)
   const activeSessions = await Session.find({
-    userId: req.user._id, // Mongoose usually uses _id
+    userId: req.user.id, // Mongoose usually uses _id
     expiresAt: { $gt: now },
     revokedAt: { $exists: false } // In Mongoose/Mongo, "null" is often treated as field not existing
-  }).sort({ lastActiveAt: -1 });
-
+  }).sort({ lastActiveAt: -1 }); 
   // 2. Fetch RECENT Logged Out Sessions (History)
   // Logic: expired or revoked
   const pastSessions = await Session.find({
@@ -25,8 +23,7 @@ export const getSessions = asyncHandler(async (req, res) => {
     ],
   })
   .sort({ lastActiveAt: -1 })
-  .limit(5); // Prevents payload bloat
-
+  .limit(5); // Prevents payload bloat 
   return res.status(200).json(
     new ApiResponse(200, {
       active: activeSessions,
@@ -51,7 +48,7 @@ export const revokeAllSessions = asyncHandler(async (req, res) => {
     }
   );
 
-  console.log(`Revoked ${result.modifiedCount} sessions for user: ${req.user._id}`);
+  
   
   return res
     .status(200)

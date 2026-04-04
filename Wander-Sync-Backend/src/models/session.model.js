@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 const sessionSchema = new mongoose.Schema({
   // --- 1. REFERENCES ---
   userId: { 
-    type: String, 
+    type: mongoose.Schema.Types.ObjectId, 
     ref: 'User', 
     required: true, 
     index: true 
