@@ -110,7 +110,7 @@ export async function login({ email, password, deviceId }, req) {
 
   await Session.create({
     userId: user._id,
-    deviceId,                           // BUG FIX: was derived from req without res, so could be a fresh UUID on every login
+    deviceId,                           
     refreshToken: hashedRefreshToken,
     ipAddress: req?.ip,
     userAgent: req?.get("user-agent"),
