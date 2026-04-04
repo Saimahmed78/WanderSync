@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema(
     profileImage: String,
 
     // --- PREFERENCES & CONTACT ---
-    contactPhone: String,
+    phoneNumber: String,
     timezone: { type: String, default: "PKT" },
     dateFormat: { type: String, default: "DD/MM/YYYY" },
 

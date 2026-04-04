@@ -27,14 +27,11 @@ export async function getUserById(userId) {
   return user;
 }
 
-export async function updateProfile({ userId, payload }) {
-  // 1. Combine all allowed fields from all three UI sections
+export async function updateProfile({ userId, payload }) {  // 1. Combine all allowed fields from all three UI sections
   const allowed = [
     "name", "avatar", "bio", "username",          // Identity
     "phoneNumber", "timezone", "theme" // Preferences
-  ];
-
-  // 2. Filter the payload so users can't inject random data (like "role: admin")
+  ];  // 2. Filter the payload so users can't inject random data (like "role: admin")
   const update = Object.fromEntries(
     Object.entries(payload).filter(([k]) => allowed.includes(k))
   );
@@ -45,8 +42,6 @@ export async function updateProfile({ userId, payload }) {
     userDoc._id, 
     { $set: update }, // Use $set to only update the fields sent
     { new: true, runValidators: true }
-  );
-
-  
+); 
   return user;
 }
