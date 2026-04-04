@@ -9,7 +9,7 @@ const isProd = process.env.NODE_ENV === "production";
 const cookieOptionsBase = {
   httpOnly: true,
   secure: isProd,
-  sameSite: "lax",
+  sameSite: isProd ? "none" : "lax",
 };
 
 export async function register({ name, email, password }) {
