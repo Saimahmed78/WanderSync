@@ -17,10 +17,13 @@ export async function collectTelemetry(req) {
   const uaRaw = req.headers["user-agent"] || "";
   const parser = new UAParser(uaRaw);
   const ua = parser.getResult();
-  
+
   // --- 3. GEOLOCATION LOGIC ---
-  const isLocalhost = clientIp === '::1' || clientIp === '127.0.0.1' || clientIp.includes('127.0.0.1');
-  
+  const isLocalhost =
+    clientIp === "::1" ||
+    clientIp === "127.0.0.1" ||
+    clientIp.includes("127.0.0.1");
+
   let locationString = "Unknown Location";
   let locationDetails = null;
 
@@ -31,8 +34,8 @@ export async function collectTelemetry(req) {
       // 🚀 STRATEGY: Try the Live API first (Most accurate for production)
       const response = await fetch(`http://ip-api.com/json/${clientIp}`);
       const data = await response.json();
-
-      if (data.status === 'success') {
+      console.log("Data from IP API",data)
+      if (data.status === "success") {
         locationString = `${data.city}, ${data.country}`;
         locationDetails = {
           country: data.country,
@@ -40,8 +43,9 @@ export async function collectTelemetry(req) {
           city: data.city,
           lat: data.lat,
           lon: data.lon,
-          provider: "ip-api"
+          provider: "ip-api",
         };
+        console.log("Location Details",locationDetails)
       } else {
         // 🛠 FALLBACK: If API fails, try local geoip-lite
         const geo = geoip.lookup(clientIp);
@@ -60,26 +64,32 @@ export async function collectTelemetry(req) {
       }
     }
   }
-
+  console.log('Location String',locationString)
   // --- 4. DEVICE NORMALIZATION ---
-  const rawDeviceType = ua.device?.type ? ua.device.type.toUpperCase() : "DESKTOP";
+  const rawDeviceType = ua.device?.type
+    ? ua.device.type.toUpperCase()
+    : "DESKTOP";
 
   // --- 5. FINAL OBJECT ---
-  return {
+  const telemeteryObject = {
     uaRaw: uaRaw,
     ipAddress: clientIp,
     ipVersion: clientIp.includes(":") ? "v6" : "v4",
     browserName: ua.browser?.name || "Unknown Browser",
     osName: ua.os?.name || "Unknown OS",
     deviceType: rawDeviceType,
-    deviceModel: ua.device?.model || (isLocalhost ? "Development Machine" : "Generic Device"),
-    location: locationString, 
+    deviceModel:
+      ua.device?.model ||
+      (isLocalhost ? "Development Machine" : "Generic Device"),
+    location: locationString,
     isMobile: rawDeviceType === "MOBILE",
     language: req.headers["accept-language"]?.split(",")[0] || "en-US",
     geoDetails: locationDetails,
     screen: {
       width: req.body?.screenWidth || req.headers["x-screen-width"],
       height: req.body?.screenHeight || req.headers["x-screen-height"],
-    }
+    },
   };
+
+  return telemeteryObject;
 }
