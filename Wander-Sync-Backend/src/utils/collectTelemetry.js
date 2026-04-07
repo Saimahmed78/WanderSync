@@ -5,105 +5,81 @@ import geoip from "geoip-lite";
 
 /**
  * Collects detailed client information from the request object.
- * Extracts IP, Geolocation, User-Agent data, and Device specs.
+ * Now uses a hybrid of local DB and live API for maximum reliability.
  */
-export function collectTelemetry(req) {
-  // --- 1. IP DETECTION ---
-  // Detects the client's IP address. request-ip handles most headers automatically.
-  const ip =
-    requestIp.getClientIp(req) ||
-    req.ip ||
-    req.connection?.remoteAddress ||
-    null;
-
-  // --- 2. PROXY & X-FORWARDED-FOR HANDLING ---
-  // If the app is behind a proxy (like Nginx, Heroku, or Cloudflare), 
-  // the real IP is usually the first address in the 'x-forwarded-for' list.
+export async function collectTelemetry(req) {
+  // --- 1. IP & PROXY DETECTION ---
+  const ip = requestIp.getClientIp(req) || req.ip || "127.0.0.1";
   const rawXff = req.headers["x-forwarded-for"];
-  let xff;
-  if (rawXff) {
-    xff = String(rawXff).split(",").map((s) => s.trim())[0];
-  }
-  const clientIp = xff && xff !== "unknown" ? xff : ip;
+  const clientIp = rawXff ? String(rawXff).split(",")[0].trim() : ip;
 
-  // --- 3. USER-AGENT (UA) PARSING ---
-  // Uses ua-parser-js to turn the messy 'user-agent' string into an object.
+  // --- 2. USER-AGENT PARSING ---
   const uaRaw = req.headers["user-agent"] || "";
   const parser = new UAParser(uaRaw);
   const ua = parser.getResult();
   
-  // --- 4. GEOLOCATION & LOCALHOST HANDLING ---
-  // Check if the IP is a local loopback (v4 or v6).
-  const isLocalhost = clientIp === '::1' || clientIp === '127.0.0.1' || clientIp === '::ffff:127.0.0.1';
-  console.log("Is Local Host", isLocalhost)
-  // geoip.lookup returns null for local IPs as they aren't on the public internet.
-  const geo = geoip.lookup(clientIp);
-  console.log("Geo Location Info",geo)
-  let locationString;
+  // --- 3. GEOLOCATION LOGIC ---
+  const isLocalhost = clientIp === '::1' || clientIp === '127.0.0.1' || clientIp.includes('127.0.0.1');
+  
+  let locationString = "Unknown Location";
+  let locationDetails = null;
+
   if (isLocalhost) {
     locationString = "LocalHost (Development)";
-  } else if (geo) {
-    // Format a readable string: "City, Country"
-    locationString = `${geo.city || "Unknown City"}, ${geo.country}`;
   } else {
-    locationString = "Unknown Location";
-  }
-  console.log("Location String",locationString)
-  // Detailed location object (for internal use)
-  const locationDetails = geo ? {
-    country: geo.country,
-    region: geo.region,
-    city: geo.city,
-    lat: geo.ll?.[0],
-    lon: geo.ll?.[1],
-    provider: "geoip-lite",
-  } : null;
-  console.log("Location Details",locationDetails)
-  // --- 5. LANGUAGE DETECTION ---
-  // Grabs the preferred browser language (e.g., 'en-US').
-  const language = req.headers["accept-language"]?.split(",")?.[0] || null;
+    try {
+      // 🚀 STRATEGY: Try the Live API first (Most accurate for production)
+      const response = await fetch(`http://ip-api.com/json/${clientIp}`);
+      const data = await response.json();
 
-  // --- 6. DEVICE TYPE NORMALIZATION ---
-  // If the parser finds no device type, it's almost certainly a desktop.
-  // We force uppercase to match your Mongoose enum.
+      if (data.status === 'success') {
+        locationString = `${data.city}, ${data.country}`;
+        locationDetails = {
+          country: data.country,
+          region: data.regionName,
+          city: data.city,
+          lat: data.lat,
+          lon: data.lon,
+          provider: "ip-api"
+        };
+      } else {
+        // 🛠 FALLBACK: If API fails, try local geoip-lite
+        const geo = geoip.lookup(clientIp);
+        if (geo) {
+          locationString = `${geo.city || "Unknown City"}, ${geo.country}`;
+          locationDetails = { ...geo, provider: "geoip-lite" };
+        }
+      }
+    } catch (error) {
+      console.error("Geo API fetch failed, using fallback:", error.message);
+      // Secondary fallback to local DB
+      const geo = geoip.lookup(clientIp);
+      if (geo) {
+        locationString = `${geo.city || "Unknown City"}, ${geo.country}`;
+        locationDetails = { ...geo, provider: "geoip-lite" };
+      }
+    }
+  }
+
+  // --- 4. DEVICE NORMALIZATION ---
   const rawDeviceType = ua.device?.type ? ua.device.type.toUpperCase() : "DESKTOP";
 
-  // --- 7. FINAL TELEMETRY OBJECT ---
-  const telemeteryObject = {
-    // The "truth" for debugging
+  // --- 5. FINAL OBJECT ---
+  return {
     uaRaw: uaRaw,
-    
-    // IP Information
     ipAddress: clientIp,
-    ipVersion: clientIp && clientIp.includes(":") ? "v6" : "v4",
-    
-    // User Friendly Strings (Perfect for your Mongoose Session Model)
+    ipVersion: clientIp.includes(":") ? "v6" : "v4",
     browserName: ua.browser?.name || "Unknown Browser",
     osName: ua.os?.name || "Unknown OS",
     deviceType: rawDeviceType,
     deviceModel: ua.device?.model || (isLocalhost ? "Development Machine" : "Generic Device"),
-    location: locationString, // <--- This is the string you need!
-    
-    // Nested Data for deep analytics
-    uaDetails: {
-      browser: ua.browser,
-      os: ua.os,
-      device: {
-        ...ua.device,
-        type: rawDeviceType // Ensure the normalized type is used
-      }
-    },
-    
+    location: locationString, 
     isMobile: rawDeviceType === "MOBILE",
-    language,
+    language: req.headers["accept-language"]?.split(",")[0] || "en-US",
     geoDetails: locationDetails,
-    
-    // Screen dimensions (requires frontend cooperation)
     screen: {
       width: req.body?.screenWidth || req.headers["x-screen-width"],
       height: req.body?.screenHeight || req.headers["x-screen-height"],
     }
   };
-  
-  return telemeteryObject;
 }
