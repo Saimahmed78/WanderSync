@@ -92,7 +92,7 @@ export async function resendVerification(email) {
 }
 
 export async function login({ email, password, deviceId }, req) {
-  const { ipAddress, browserName,osName, uaRaw ,location} = collectTelemetry(req);
+  const { ipAddress, browserName,osName, uaRaw ,location} = await collectTelemetry(req);
   const user = await User.findOne({ email });
   if (!user) throw new ApiError(404, "User does not exist");
 

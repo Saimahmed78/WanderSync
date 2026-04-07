@@ -36,7 +36,7 @@ export async function collectTelemetry(req) {
       const data = await response.json();
       console.log("Data from IP API",data)
       if (data.status === "success") {
-        locationString = `${data.city}, ${data.country}`;
+        locationString = `${data.city}, ${data.regionName}, {data.country}`;
         locationDetails = {
           country: data.country,
           region: data.regionName,
@@ -90,6 +90,6 @@ export async function collectTelemetry(req) {
       height: req.body?.screenHeight || req.headers["x-screen-height"],
     },
   };
-
+  console.log("Telemetery Object",telemeteryObject)
   return telemeteryObject;
 }
