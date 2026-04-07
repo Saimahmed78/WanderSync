@@ -120,6 +120,7 @@ export async function login({ email, password, deviceId }, req) {
     issuedAt: new Date(),
     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   }
+  console.log("Session Doc",sessionDoc)
   await Session.create(sessionDoc);
 
   userSecurity.lastLoginAt = new Date();
