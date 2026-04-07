@@ -31,14 +31,14 @@ export function collectTelemetry(req) {
   const uaRaw = req.headers["user-agent"] || "";
   const parser = new UAParser(uaRaw);
   const ua = parser.getResult();
-
+  
   // --- 4. GEOLOCATION & LOCALHOST HANDLING ---
   // Check if the IP is a local loopback (v4 or v6).
   const isLocalhost = clientIp === '::1' || clientIp === '127.0.0.1' || clientIp === '::ffff:127.0.0.1';
   console.log("Is Local Host", isLocalhost)
   // geoip.lookup returns null for local IPs as they aren't on the public internet.
   const geo = geoip.lookup(clientIp);
-  
+  console.log("Geo Location Info",geo)
   let locationString;
   if (isLocalhost) {
     locationString = "LocalHost (Development)";
@@ -48,7 +48,7 @@ export function collectTelemetry(req) {
   } else {
     locationString = "Unknown Location";
   }
-   console.log("Location String",locationString)
+  console.log("Location String",locationString)
   // Detailed location object (for internal use)
   const locationDetails = geo ? {
     country: geo.country,
@@ -58,7 +58,7 @@ export function collectTelemetry(req) {
     lon: geo.ll?.[1],
     provider: "geoip-lite",
   } : null;
-
+  console.log("Location Details",locationDetails)
   // --- 5. LANGUAGE DETECTION ---
   // Grabs the preferred browser language (e.g., 'en-US').
   const language = req.headers["accept-language"]?.split(",")?.[0] || null;
