@@ -1,78 +1,109 @@
 // middleware/collectTelemetry.js
 import requestIp from "request-ip";
 import { UAParser } from "ua-parser-js";
-import geoip from "geoip-lite"; // local DB; consider maxmind for production
+import geoip from "geoip-lite";
 
+/**
+ * Collects detailed client information from the request object.
+ * Extracts IP, Geolocation, User-Agent data, and Device specs.
+ */
 export function collectTelemetry(req) {
-  // IP detection
+  // --- 1. IP DETECTION ---
+  // Detects the client's IP address. request-ip handles most headers automatically.
   const ip =
     requestIp.getClientIp(req) ||
     req.ip ||
     req.connection?.remoteAddress ||
     null;
 
-  // prefer the left-most value in X-Forwarded-For if behind proxies:
+  // --- 2. PROXY & X-FORWARDED-FOR HANDLING ---
+  // If the app is behind a proxy (like Nginx, Heroku, or Cloudflare), 
+  // the real IP is usually the first address in the 'x-forwarded-for' list.
   const rawXff = req.headers["x-forwarded-for"];
   let xff;
   if (rawXff) {
-    xff = String(rawXff)
-      .split(",")
-      .map((s) => s.trim())[0];
+    xff = String(rawXff).split(",").map((s) => s.trim())[0];
   }
   const clientIp = xff && xff !== "unknown" ? xff : ip;
-  // UA parsing
+
+  // --- 3. USER-AGENT (UA) PARSING ---
+  // Uses ua-parser-js to turn the messy 'user-agent' string into an object.
   const uaRaw = req.headers["user-agent"] || "";
   const parser = new UAParser(uaRaw);
   const ua = parser.getResult();
 
-  // Geo
-  const geo = geoip.lookup(clientIp) || null; // { range, country, region, city, ll, metro, zip }
+  // --- 4. GEOLOCATION & LOCALHOST HANDLING ---
+  // Check if the IP is a local loopback (v4 or v6).
+  const isLocalhost = clientIp === '::1' || clientIp === '127.0.0.1' || clientIp === '::ffff:127.0.0.1';
+  console.log("Is Local Host", isLocalhost)
+  // geoip.lookup returns null for local IPs as they aren't on the public internet.
+  const geo = geoip.lookup(clientIp);
+  
+  let locationString;
+  if (isLocalhost) {
+    locationString = "LocalHost (Development)";
+  } else if (geo) {
+    // Format a readable string: "City, Country"
+    locationString = `${geo.city || "Unknown City"}, ${geo.country}`;
+  } else {
+    locationString = "Unknown Location";
+  }
+   console.log("Location String",locationString)
+  // Detailed location object (for internal use)
+  const locationDetails = geo ? {
+    country: geo.country,
+    region: geo.region,
+    city: geo.city,
+    lat: geo.ll?.[0],
+    lon: geo.ll?.[1],
+    provider: "geoip-lite",
+  } : null;
 
-  const location = geo
-    ? {
-        country: geo.country,
-        region: geo.region,
-        city: geo.city,
-        lat: geo.ll?.[0],
-        lon: geo.ll?.[1],
-        timezone: null,
-        provider: "geoip-lite",
-      }
-    : null;
-  // language
+  // --- 5. LANGUAGE DETECTION ---
+  // Grabs the preferred browser language (e.g., 'en-US').
   const language = req.headers["accept-language"]?.split(",")?.[0] || null;
-  // device detection
-  const isMobile =
-    !!(ua.device && ua.device.type === "mobile") || /mobile/i.test(uaRaw);
-  // optional screen info — only possible if client sends it
-  const screen = {
-    width: req.body?.screenWidth || req.headers["x-screen-width"],
-    height: req.body?.screenHeight || req.headers["x-screen-height"],
-    pixelRatio:
-      req.body?.devicePixelRatio || req.headers["x-device-pixelratio"],
-  };
-  return {
-    ipaddress: clientIp,
+
+  // --- 6. DEVICE TYPE NORMALIZATION ---
+  // If the parser finds no device type, it's almost certainly a desktop.
+  // We force uppercase to match your Mongoose enum.
+  const rawDeviceType = ua.device?.type ? ua.device.type.toUpperCase() : "DESKTOP";
+
+  // --- 7. FINAL TELEMETRY OBJECT ---
+  const telemeteryObject = {
+    // The "truth" for debugging
+    uaRaw: uaRaw,
+    
+    // IP Information
+    ipAddress: clientIp,
     ipVersion: clientIp && clientIp.includes(":") ? "v6" : "v4",
-    uaRaw,
-    ua: {
-      family: ua.browser?.name,
-      major: ua.browser?.major,
-      minor: ua.browser?.version,
-      os: {
-        family: ua.os?.name,
-        major: ua.os?.major,
-        minor: ua.os?.minor,
-      },
+    
+    // User Friendly Strings (Perfect for your Mongoose Session Model)
+    browserName: ua.browser?.name || "Unknown Browser",
+    osName: ua.os?.name || "Unknown OS",
+    deviceType: rawDeviceType,
+    deviceModel: ua.device?.model || (isLocalhost ? "Development Machine" : "Generic Device"),
+    location: locationString, // <--- This is the string you need!
+    
+    // Nested Data for deep analytics
+    uaDetails: {
+      browser: ua.browser,
+      os: ua.os,
       device: {
-        model: ua.device?.model || "",
-        vendor: ua.device?.vendor || "",
-        type: ua.device?.type || "",
-      },
+        ...ua.device,
+        type: rawDeviceType // Ensure the normalized type is used
+      }
     },
-    isMobile,
+    
+    isMobile: rawDeviceType === "MOBILE",
     language,
-    location,
-    screen,
+    geoDetails: locationDetails,
+    
+    // Screen dimensions (requires frontend cooperation)
+    screen: {
+      width: req.body?.screenWidth || req.headers["x-screen-width"],
+      height: req.body?.screenHeight || req.headers["x-screen-height"],
+    }
   };
+  
+  return telemeteryObject;
 }

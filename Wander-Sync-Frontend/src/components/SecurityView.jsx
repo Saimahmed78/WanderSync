@@ -23,8 +23,9 @@ export function SecurityView() {
     setIsLoading(true);
     try {
       const data = await apiClient.getSessions();
-      const sessions= data.data 
-      if (sessions.active) {
+      const activeSessions= data.data 
+      if (activeSessions.active) {
+        console.log("Active Sessions",activeSessions)
         setSessions(data.data.active);
       } else {
         setSessions([]);
@@ -148,7 +149,7 @@ export function SecurityView() {
                         </div>
                         <div>
                           <div className={session.isCurrent ? 'text-indigo-400 font-semibold' : 'text-white font-medium'}>
-                            {session.browserName || 'Unknown Device'} on {session.deviceType.toLowerCase() || 'Unknown Device'}
+                            {session?.browserName || 'Unknown Device'} on {session?.osName?.toLowerCase() || 'Unknown Device'}
                           </div>
                           {session.isCurrent && <span className="text-xs text-indigo-300 block">Current Session</span>}
                         </div>

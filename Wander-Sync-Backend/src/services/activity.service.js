@@ -53,7 +53,7 @@ async function writeAudit({
   sessionId,
   metadata,
 }) {
-  const auditLog = await AuditLog.create({
+  const auditLogDoc={
     userId: user._id,
     eventType: event,
     actorId: user._id,
@@ -69,8 +69,9 @@ async function writeAudit({
       sessionId,
       ...metadata,
     },
-  });
-  console.log("Audit log created:", auditLog._id);
+  }
+  const auditLog = await AuditLog.create(auditLogDoc);
+  // console.log("Audit log created:", auditLogDoc);
 }
 
 async function upsertUserDevice({ user, deviceId, telemetry, event }) {

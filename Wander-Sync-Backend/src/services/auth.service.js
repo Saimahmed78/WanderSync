@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { UserSecurity } from "../models/userSecurity.model.js";
 import { Session } from "../models/session.model.js";
+import { collectTelemetry } from "../utils/collectTelemetry.js";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -90,8 +91,8 @@ export async function resendVerification(email) {
   return { name: user.name, verificationURL };
 }
 
-
 export async function login({ email, password, deviceId }, req) {
+  const { ipAddress, browserName,osName, uaRaw ,location} = collectTelemetry(req);
   const user = await User.findOne({ email });
   if (!user) throw new ApiError(404, "User does not exist");
 
@@ -107,16 +108,19 @@ export async function login({ email, password, deviceId }, req) {
   const accessToken = userSecurity.generateAccessToken(user._id, user.name, user.email);
   const { refreshToken, hashedRefreshToken } =
     userSecurity.generateRefreshToken(user._id);
-
-  await Session.create({
+  const sessionDoc = {
     userId: user._id,
     deviceId,                           
     refreshToken: hashedRefreshToken,
-    ipAddress: req?.ip,
-    userAgent: req?.get("user-agent"),
+    ipAddress,
+    browserName,
+    osName,
+    userAgent: uaRaw,
+    location,
     issuedAt: new Date(),
     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-  });
+  }
+  await Session.create(sessionDoc);
 
   userSecurity.lastLoginAt = new Date();
   userSecurity.totalLogins = (userSecurity.totalLogins || 0) + 1;
