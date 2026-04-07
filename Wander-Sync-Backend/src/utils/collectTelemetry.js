@@ -34,9 +34,8 @@ export async function collectTelemetry(req) {
       // 🚀 STRATEGY: Try the Live API first (Most accurate for production)
       const response = await fetch(`http://ip-api.com/json/${clientIp}`);
       const data = await response.json();
-      console.log("Data from IP API",data)
       if (data.status === "success") {
-        locationString = `${data.city}, ${data.regionName}, {data.country}`;
+        locationString = `${data.city}, ${data.regionName}, ${data.country}`;
         locationDetails = {
           country: data.country,
           region: data.regionName,
@@ -45,7 +44,6 @@ export async function collectTelemetry(req) {
           lon: data.lon,
           provider: "ip-api",
         };
-        console.log("Location Details",locationDetails)
       } else {
         // 🛠 FALLBACK: If API fails, try local geoip-lite
         const geo = geoip.lookup(clientIp);
@@ -55,7 +53,6 @@ export async function collectTelemetry(req) {
         }
       }
     } catch (error) {
-      console.error("Geo API fetch failed, using fallback:", error.message);
       // Secondary fallback to local DB
       const geo = geoip.lookup(clientIp);
       if (geo) {
@@ -64,7 +61,6 @@ export async function collectTelemetry(req) {
       }
     }
   }
-  console.log('Location String',locationString)
   // --- 4. DEVICE NORMALIZATION ---
   const rawDeviceType = ua.device?.type
     ? ua.device.type.toUpperCase()
@@ -90,6 +86,5 @@ export async function collectTelemetry(req) {
       height: req.body?.screenHeight || req.headers["x-screen-height"],
     },
   };
-  console.log("Telemetery Object",telemeteryObject)
   return telemeteryObject;
 }
