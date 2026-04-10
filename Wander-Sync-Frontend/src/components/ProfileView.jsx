@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
 import { FormInput, FormSelect, FormTextarea } from "../components/FormComponents"
 import * as z from 'zod';
+import { useNavigate } from "react-router";
 import {
   Mail, User, Globe,
   Save, Camera
@@ -12,7 +13,6 @@ import apiClient from '../../services/apiClient';
 
 
 // --- ZOD SCHEMAS ---
-
 
 const identitySchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -71,9 +71,9 @@ const IdentitySection = ({ user, onUpdate }) => {
     }
   });
 
-const onSubmit = async (data) => { 
+  const onSubmit = async (data) => {
     try {
-      const response = await apiClient.updateIdentity(data); 
+      const response = await apiClient.updateIdentity(data);
       toast.success(response.message)
       await onUpdate();
     } catch (error) {
@@ -83,7 +83,7 @@ const onSubmit = async (data) => {
       }
       console.error("Failed to update identity", error);
     }
-}
+  }
 
   return (
     <EditableSection
@@ -123,7 +123,7 @@ const onSubmit = async (data) => {
 
 
 
-const PreferencesSection = ({ user, onUpdate }) => { 
+const PreferencesSection = ({ user, onUpdate }) => {
   const { register, handleSubmit, formState: { errors, isDirty, isSubmitting }, reset } = useForm({
     resolver: zodResolver(preferencesSchema),
     mode: "onChange",
@@ -189,19 +189,23 @@ const PreferencesSection = ({ user, onUpdate }) => {
 
 // --- MAIN PAGE COMPONENT ---
 export default function ProfileSettings() {
+  const navigate = useNavigate()
+
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchUserData = async () => {
     try {
-      const response = await apiClient.getMe(); 
+      const response = await apiClient.getMe();
       toast.success("Profile loaded successfully");
       const userData = response.user || response.data || response;
 
       setUser(userData);
     } catch (error) {
       console.error("Failed to load user profile", error);
+      navigate("/login")
       toast.error(error.message || "Failed to load profile");
+
     } finally {
       setIsLoading(false);
     }
@@ -226,7 +230,7 @@ export default function ProfileSettings() {
           <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 flex flex-col items-center text-center h-fit">
             <div className="relative mb-4">
               <div className="w-32 h-32 rounded-full border-4 border-gray-700 bg-indigo-600 flex items-center justify-center text-4xl font-bold text-white overflow-hidden">
-                {user.name?user.name.substring(0, 2).toUpperCase() : "ME"}
+                {user.name ? user.name.substring(0, 2).toUpperCase() : "ME"}
               </div>
               <button className="absolute bottom-0 right-0 p-2 bg-indigo-600 rounded-full text-white hover:bg-indigo-500 transition-colors">
                 <Camera className="w-4 h-4" />
