@@ -23,12 +23,6 @@ const sessionSchema = new mongoose.Schema({
     sparse: true // Allows nulls while keeping uniqueness for non-null values
   },
 
-  // Embedded Revoked Tokens (equivalent to your RevokedToken model/array)
-  revokedTokens: [{
-    token: { type: String, required: true },
-    revokedAt: { type: Date, default: Date.now }
-  }],
-
   // --- 3. PARSED UI DATA ---
   browserName: String,
   osName: String,
@@ -54,12 +48,10 @@ const sessionSchema = new mongoose.Schema({
     required: true,
     index: { expires: 0 } // MAGIC: TTL Index - Mongo will auto-delete this doc when current time > expiresAt
   },
-  revokedAt: Date,
   lastActiveAt: { 
     type: Date, 
     default: Date.now 
   },
-  revokedReason: String
 
 }, { 
   timestamps: true, // Automatically adds createdAt and updatedAt fields

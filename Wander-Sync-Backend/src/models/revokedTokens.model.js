@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { v4 as uuidv4 } from "uuid";
 
 const revokedTokenSchema = new mongoose.Schema(
   {
@@ -7,11 +6,11 @@ const revokedTokenSchema = new mongoose.Schema(
       type: String,
       ref: "Session",
       required: true,
-      index: true,
     },
     token: {
       type: String,
       required: true,
+      index: true,
       unique: true, // Unique for O(1) lookup in middleware
     },
     revokedAt: {

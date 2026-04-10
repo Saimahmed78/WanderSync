@@ -80,15 +80,19 @@ userSecuritySchema.methods.generateRefreshToken = function (userId) {
     },
   );
   const hashed = crypto.createHash("sha256").update(refreshToken).digest("hex");
-  
+
   return { refreshToken, hashedRefreshToken: hashed };
 };
 
-userSecuritySchema.methods.generateAccessToken = function (userId, name, email) {
+userSecuritySchema.methods.generateAccessToken = function (
+  userId,
+  name,
+  email,
+) {
   return jwt.sign(
-    { id: userId, name, email},
+    { id: userId, name, email },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "15m" },
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY },
   );
 };
 
@@ -102,24 +106,22 @@ userSecuritySchema.methods.generateToken = function (type) {
     this.hashedVerificationToken = hashed;
     this.hashedVerificationTokenExpiry = Date.now() + 1000 * 60 * 15; // 15 min
 
-     console.log(
-    "this.hashedVerificationToken:",
-    this.hashedVerificationToken,
-    "this.hashedVerificationTokenExpiry:",
-    this.hashedVerificationTokenExpiry,
-  );
-  }
- 
-  else if (type === "forgot") {
+    console.log(
+      "this.hashedVerificationToken:",
+      this.hashedVerificationToken,
+      "this.hashedVerificationTokenExpiry:",
+      this.hashedVerificationTokenExpiry,
+    );
+  } else if (type === "forgot") {
     this.hashedForgotPasswordToken = hashed;
     this.hashedForgotPasswordTokenExpiry = Date.now() + 1000 * 60 * 15; // 15 min
 
     console.log(
-    "this.hashedForgotPasswordToken:",
-    this.hashedForgotPasswordToken,
-    "this.hashedForgotPasswordTokenExpiry:",
-    this.hashedForgotPasswordTokenExpiry,
-  );
+      "this.hashedForgotPasswordToken:",
+      this.hashedForgotPasswordToken,
+      "this.hashedForgotPasswordTokenExpiry:",
+      this.hashedForgotPasswordTokenExpiry,
+    );
   }
   return token; // send raw token to user
 };
